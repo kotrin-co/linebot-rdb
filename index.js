@@ -9,6 +9,7 @@ require('date-utils');
 const LINE_CHANNEL_ACCESS_TOKEN = '3xoDGJ8KgOVxVsyS4/XJwYqXOemYOX2b3mDioaOgnMv2jc2vkZcuGBnSzrehcK+sYXWEXgwraDP4DDvm6uiez8PChvb77gEAAtndU93wGwLN+LnsqVlLnQQN8ybt6wIquvnU/xFiobFIY5IOFLjclQdB04t89/1O/w1cDnyilFU=';    // LINE Botのアクセストークン
 const LINE_CHANNEL_SECRET = '8df5f91ca99d59fdf5be9877edb547a6';          // LINE BotのChannel Secret
 const GURUNAVI_API_KEY = 'e439bdcc53f4e5a8d0a777656e3e26c3';
+const DOCOMO_API_KEY = '4450394e564d796730344a7757733044345237396b544d6f43314538694236442f4d775449696d42444d38';
 
 const LINE_MESSAGE_MAX_LENGTH = 2000;
 const GURUNAVI_LUNCH_HOUR = 13;
@@ -64,7 +65,14 @@ const handleEvent = (event) => {
     const word = text.slice(0,-length);
     lookUpWords(event.source.userId,word);
     message = 'ちょっと待ってね';
-  }else{
+  }else if(text.startsWith('言語解析')){
+    const length = '言語解析　'.length;
+    const sentence = text.slice(length);
+    analysisSentence(event.source.userId,sentence);
+
+    message = 'ちょっと待ってね';
+  }
+  else{
     message = text;
   }
 
@@ -316,6 +324,76 @@ const gurunaviSearch = async (userId,latitude,longitude) => {
   }).setMaxListeners(10);
 }
 
+const analysisSentence = (userId,sentence) => {
+  console.log('analysisSentence()');
+
+  const headers = {
+    'Content-Type':'application/json'
+  };
+
+  const strRequestId = Math.random().toString(36).slice(-8);
+  const body = {
+    request_id:strRequestId,
+    sentence:sentence
+  };
+
+  const options = {
+    url:'https://api.apigw.smt.docomo.ne.jp/gooLanguageAnalysis/v1/entity',
+    method:'POST',
+    qs:{
+      APIKEY:DOCOMO_API_KEY
+    },
+    headers:headers,
+    body:JSON.stringify(body)
+  };
+
+  request(options,(err,response,result)=>{
+    let message = '';
+
+    if(!err && response.statusCode==200){
+      const json = JSON.parse(result);
+
+      if(json.request_id != strRequestId){
+        message = 'ごめんなさい。'+NEW_LINE;
+        message += '解析できませんでした';
+      }else{
+        const list = json.ne_list;
+
+        const title = '[解析結果]' + NEW_LINE;
+        message = title;
+
+        Object.keys(list).some((key)=>{
+          if(message!= title){
+            message += NEW_LINE;
+          }
+
+          const item = list[key];
+          const word = item[0];
+          const type = item[1];
+          message += type + ':' + word;
+        });
+
+        if(message == title){
+          message = 'ごめんなさい。'+ NEW_LINE;
+          message += '解析結果はありません。';
+        }
+
+        console.log('message = '+NEW_LINE);
+        console.log(message);
+      }
+    }else{
+      message = 'ごめんなさい。' + NEW_LINE;
+      message += 'エラーが発生しました。';
+      console.log('error!');
+      console.log('err:'+err+',response.statusCode:',response.statusCode);
+    }
+    
+    client.pushMessage(userId,{
+      type:'text',
+      text:message
+    });
+  }).setMaxListeners(10);
+}
   // const lineBot = (req,res) => {
   //   res.status(200).end();
   //   const events = req.body.events;
