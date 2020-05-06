@@ -66,11 +66,12 @@ const handleEvent = (event) => {
     lookUpWords(event.source.userId,word);
     message = 'ちょっと待ってね';
   }else if(text.startsWith('言語解析')){
-    const length = '言語解析　'.length;
+    const length = '言語解析 '.length;
     const sentence = text.slice(length);
     analysisSentence(event.source.userId,sentence);
 
     message = 'ちょっと待ってね';
+    // console.log(sentence,length,'@@@@');
   }
   else{
     message = text;
@@ -324,7 +325,7 @@ const gurunaviSearch = async (userId,latitude,longitude) => {
   }).setMaxListeners(10);
 }
 
-const analysisSentence = (userId,sentence) => {
+const analysisSentence = async (userId,sentence) => {
   console.log('analysisSentence()');
 
   const headers = {
