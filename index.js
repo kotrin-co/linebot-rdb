@@ -4,6 +4,7 @@ const PORT = process.env.PORT || 5000
 const line = require('@line/bot-sdk');
 const axios = require('axios');
 const request = require('request');
+require('date-utils');
 
 const LINE_CHANNEL_ACCESS_TOKEN = '3xoDGJ8KgOVxVsyS4/XJwYqXOemYOX2b3mDioaOgnMv2jc2vkZcuGBnSzrehcK+sYXWEXgwraDP4DDvm6uiez8PChvb77gEAAtndU93wGwLN+LnsqVlLnQQN8ybt6wIquvnU/xFiobFIY5IOFLjclQdB04t89/1O/w1cDnyilFU=';    // LINE Botのアクセストークン
 const LINE_CHANNEL_SECRET = '8df5f91ca99d59fdf5be9877edb547a6';          // LINE BotのChannel Secret
@@ -35,18 +36,20 @@ express()
       .all(req.body.events.map(handleEvent))
       .then((result)=>{
         console.log('event processed');
+        console.log(result,'@@@result');
       });
   })
   .listen(PORT, () => console.log(`Listening on ${ PORT }`))
 
 const handleEvent = (event) => {
   console.log('handleEvent()');
+  console.log(event,'@@@event');
 
   if(event.type !== 'message'){
     return Promise.resolve(null);
   }
 
-  if(event.message.type !== 'text'){
+  if((event.message.type !== 'text') && (event.message.type !== 'location')){
     return Promise.resolve(null);
   }
 
@@ -195,7 +198,7 @@ const lookUpWords = async (userId,word) => {
   }).setMaxListeners(10);
 }
 
-const gurunaviSearch = (userId,latitude,longitude) => {
+const gurunaviSearch = async (userId,latitude,longitude) => {
   console.log('gurunaviSearch()');
 
   const url = 'https://api.gnavi.co.jp/RestSearchAPI/v3/'
@@ -210,7 +213,7 @@ const gurunaviSearch = (userId,latitude,longitude) => {
       url:url,
       qs:{
         keyid:GURUNAVI_API_KEY,
-        format:format,
+        // format:format,
         latitude:latitude,
         longitude:longitude,
         range:range,
@@ -230,7 +233,7 @@ const gurunaviSearch = (userId,latitude,longitude) => {
       url:url,
       qs:{
         keyid:GURUNAVI_API_KEY,
-        format:format,
+        // format:format,
         category_l:category,
         latitude:latitude,
         longitude:longitude,
@@ -242,7 +245,7 @@ const gurunaviSearch = (userId,latitude,longitude) => {
 
   request(options,(err,response,result)=>{
     let message = '';
-
+    console.log(response,'@@@res');
     if(!err && response.statusCode == 200){
       const json = JSON.parse(result);
       if(json.rest){
