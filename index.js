@@ -7,8 +7,11 @@ const request = require('request');
 
 const LINE_CHANNEL_ACCESS_TOKEN = '3xoDGJ8KgOVxVsyS4/XJwYqXOemYOX2b3mDioaOgnMv2jc2vkZcuGBnSzrehcK+sYXWEXgwraDP4DDvm6uiez8PChvb77gEAAtndU93wGwLN+LnsqVlLnQQN8ybt6wIquvnU/xFiobFIY5IOFLjclQdB04t89/1O/w1cDnyilFU=';    // LINE Botのアクセストークン
 const LINE_CHANNEL_SECRET = '8df5f91ca99d59fdf5be9877edb547a6';          // LINE BotのChannel Secret
+const GURUNAVI_API_KEY = 'e439bdcc53f4e5a8d0a777656e3e26c3';
 
 const LINE_MESSAGE_MAX_LENGTH = 2000;
+const GURUNAVI_LUNCH_HOUR = 13;
+const GURUNAVI_DRINKING_HOUR = 17;
 
 const NEW_LINE = '\n';
 
@@ -60,6 +63,15 @@ const handleEvent = (event) => {
     message = 'ちょっと待ってね';
   }else{
     message = text;
+  }
+
+  const latitude = (event.message.type === 'location') ? event.message.latitude : '';
+  const longitude = (event.message.type === 'location') ? event.message.longitude : '';
+
+  if((latitude != '')&&(longitude != '')){
+    gurunaviSearch(event.source.userId,latitude,longitude);
+
+    message = 'ちょっと待ってね';
   }
 
   return client.replyMessage(event.replyToken,{
@@ -172,6 +184,124 @@ const lookUpWords = async (userId,word) => {
     }else{
       message='ごめんなさい。'+NEW_LINE;
       message+='エラーが発生しました。';
+      console.log('error!!');
+      console.log('err:'+err+',response.statusCode'+response.statusCode);
+    }
+
+    client.pushMessage(userId,{
+      type:'text',
+      text:message
+    });
+  }).setMaxListeners(10);
+}
+
+const gurunaviSearch = (userId,latitude,longitude) => {
+  console.log('gurunaviSearch()');
+
+  const url = 'https://api.gnavi.co.jp/RestSearchAPI/v3/'
+  const format = 'json';
+  const range = 3;
+  const hit_per_page = 3;
+
+  let options;
+  const nowHour = new Date().toFormat("HH24");
+  if(nowHour<GURUNAVI_LUNCH_HOUR){
+    options = {
+      url:url,
+      qs:{
+        keyid:GURUNAVI_API_KEY,
+        format:format,
+        latitude:latitude,
+        longitude:longitude,
+        range:range,
+        hit_per_page:hit_per_page,
+        lunch:1
+      }
+    };
+  }else{
+    let category;
+    if(nowHour<GURUNAVI_DRINKING_HOUR){
+      category = 'RSFST18000';
+    }else{
+      category = 'RSFST09000';
+    }
+
+    options = {
+      url:url,
+      qs:{
+        keyid:GURUNAVI_API_KEY,
+        format:format,
+        category_l:category,
+        latitude:latitude,
+        longitude:longitude,
+        range:range,
+        hit_per_page:hit_per_page
+      }
+    };
+  }
+
+  request(options,(err,response,result)=>{
+    let message = '';
+
+    if(!err && response.statusCode == 200){
+      const json = JSON.parse(result);
+      if(json.rest){
+        const list = json.rest;
+
+        const title = '[検索結果]'+NEW_LINE;
+        message = title;
+
+        let number = 1;
+
+        Object.keys(list).some((key)=>{
+          if(message != title){
+            message += NEW_LINE;
+          }
+          const item = list[key];
+
+          const name = item.name;
+          if(name){
+            message += 'No.'+number+NEW_LINE;
+            message += '◆店舗名:'+NEW_LINE;
+            message += name + NEW_LINE;
+
+            let opentime = item.opentime;
+            if(opentime && (typeof opentime == 'string')){
+              message += '◆営業時間:' + NEW_LINE;
+              opentime = opentime.replace(/<BR>/g,NEW_LINE);
+              message += opentime + NEW_LINE;
+            }
+
+            let holiday = item.holiday;
+            if(holiday && (typeof holiday == 'string')){
+              message += '◆休業日:'+NEW_LINE;
+              holiday = holiday.replace(/<BR>/g,NEW_LINE);
+              message += holiday + NEW_LINE;
+            }
+
+            const url = item.url_mobile;
+            if(url){
+              message += url + NEW_LINE;
+            }
+
+            number++;
+          }
+        });
+
+        if(message == title){
+          message = 'ごめんなさい。' +NEW_LINE;
+          message += '検索結果はありません。';
+        }
+
+        console.log('message = ' +NEW_LINE);
+        console.log(message);
+      }else{
+        message = 'ごめんなさい。'+NEW_LINE;
+        message += '検索結果はありません。';
+      }
+    }else{
+      message = 'ごめんなさい。'+NEW_LINE;
+      message += 'エラーが発生しました。';
       console.log('error!!');
       console.log('err:'+err+',response.statusCode'+response.statusCode);
     }
