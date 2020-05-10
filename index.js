@@ -5,6 +5,7 @@ const line = require('@line/bot-sdk');
 const axios = require('axios');
 const request = require('request');
 require('date-utils');
+const { Client } = require('pg');
 
 const LINE_CHANNEL_ACCESS_TOKEN = '3xoDGJ8KgOVxVsyS4/XJwYqXOemYOX2b3mDioaOgnMv2jc2vkZcuGBnSzrehcK+sYXWEXgwraDP4DDvm6uiez8PChvb77gEAAtndU93wGwLN+LnsqVlLnQQN8ybt6wIquvnU/xFiobFIY5IOFLjclQdB04t89/1O/w1cDnyilFU=';    // LINE Botのアクセストークン
 const LINE_CHANNEL_SECRET = '8df5f91ca99d59fdf5be9877edb547a6';          // LINE BotのChannel Secret
@@ -23,6 +24,16 @@ const config = {
 };
 
 const client = new line.Client(config);
+
+const pgClient = new Client({
+  user:'scpekoaizloofe',
+  host:'ec2-34-195-169-25.compute-1.amazonaws.com',
+  databese:'da154sl43o81md',
+  password:'56f3120fbcf900184b8d675f3892733ea375ab2d1189a85f1019b971531cf039',
+  port:5432
+});
+
+pgClient.connect();
 
 express()
   .use(express.static(path.join(__dirname, 'public')))
@@ -57,6 +68,18 @@ const handleEvent = (event) => {
   let message = '';
 
   const text = (event.message.type === 'text') ? event.message.text : '';
+
+  // ここからpostgres記述
+  const id = event.source.userId;
+  const query = {
+    text:'INSERT INTO users(id,text) VALUES($1,$2)',
+    values:[id,text]
+  };
+
+  pgClient.query(query)
+    .then(res=> console.log(res.rows[0]))
+    .catch(e=> console.error(e.stack));
+
   if(text === '天気'){
     checkWeatherForecast(event.source.userId);
     message = 'ちょっと待ってね';
