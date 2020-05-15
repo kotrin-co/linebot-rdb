@@ -33,7 +33,17 @@ const lineBot = (req,res) => {
   const promises = [];
   for(let i=0, l=events.length;i<l;i++){
     const ev = events[i];
-    promises.push(echoman(ev));
+
+    switch(ev.type){
+      case 'join':
+        promises.push(greeting_join(ev));
+      
+      case 'follow':
+        promises.push(greeting_follow(ev));
+      
+      case 'message':
+        promises.push(echoman(ev));
+    }
   }
   Promise
     .all(promises)
@@ -46,4 +56,40 @@ const echoman = async (ev) => {
     type:'text',
     text:`${pro.displayName}さん、今「${ev.message.text}」って言いました？`
   });
+}
+
+const greeting_follow = async (ev) => {
+  const pro = await client.getProfile(ev.source.userId);
+  return client.replyMessage(ev.replyToken,[
+    {
+      type:'text',
+      text:`${pro.displayName}さん、こんにちは。調整くんです。\\n${pro.displayName}さんの代わりに僕がスケジュール調整するよ。`
+    },
+    {
+      type:'text',
+      text:'このリンクから依頼してね。'
+    },
+    {
+      type:'text',
+      text:'https://linebot-rdb.herokuapp.com/'
+    }
+  ]);
+}
+
+const greeting_join = async (ev) => {
+  const pro = await client.getProfile(ev.source.userId);
+  return client.replyMessage(ev.replyToken,[
+    {
+      type:'text',
+      text:`みなさんさん、こんにちは。調整くんです。\\n${pro.displayName}さんの代わりに僕がスケジュール調整するよ。`
+    },
+    {
+      type:'text',
+      text:'このリンクから依頼してね。'
+    },
+    {
+      type:'text',
+      text:'https://linebot-rdb.herokuapp.com/'
+    }
+  ]);
 }
