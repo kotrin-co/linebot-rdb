@@ -63,7 +63,7 @@ const greeting_follow = async (ev) => {
   return client.replyMessage(ev.replyToken,[
     {
       type:'text',
-      text:`${pro.displayName}さん、こんにちは。調整くんです。\\n${pro.displayName}さんの代わりに僕がスケジュール調整するよ。`
+      text:`${pro.displayName}さん、こんにちは。調整くんです。\n${pro.displayName}さんの代わりに僕がスケジュール調整するよ。`
     },
     {
       type:'text',
@@ -81,7 +81,7 @@ const greeting_join = async (ev) => {
   return client.replyMessage(ev.replyToken,[
     {
       type:'text',
-      text:`みなさんさん、こんにちは。調整くんです。\\n${pro.displayName}さんの代わりに僕がスケジュール調整するよ。`
+      text:`みなさんさん、こんにちは。調整くんです。\n${pro.displayName}さんの代わりに僕がスケジュール調整するよ。`
     },
     {
       type:'text',
