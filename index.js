@@ -19,7 +19,7 @@ const client = new line.Client(config);
 
 const create = require('./routes/create');
 
-const onetime_state_code;
+var onetime_state_code;
 
 const state_code = () => {
   const l = 8;
