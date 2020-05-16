@@ -37,7 +37,7 @@ app
   .disable('etag')
   .set('views',path.join(__dirname,'views'))
   .set('view engine','ejs')
-  .get('/',(req,res)=>res.render('pages/index'))
+  // .get('/',(req,res)=>res.render('pages/index'))
   .get('/login',(req,res)=>{
     onetime_state_code = state_code();
     const query = qs.stringify({
