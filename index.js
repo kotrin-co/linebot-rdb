@@ -43,7 +43,7 @@ app
     const query = qs.stringify({
       response_type:'code',
       client_id:process.env.LINECORP_PLATFORM_CHANNEL_CHANNELID,
-      redirect_uri:'https://https://linebot-rdb.herokuapp.com/callback',
+      redirect_uri:'https://linebot-rdb.herokuapp.com/callback',
       state:onetime_state_code,
       scope:'profile'
     })
