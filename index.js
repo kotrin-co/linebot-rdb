@@ -50,7 +50,11 @@ app
     res.redirect(301,'https://access.line.me/oauth2/v2.1/authorize?'+query)
   })
   .get('/callback',(req,res)=>{
-    request
+    const callback_state_code = req.query.state;
+    if(onetime_state_code != callback_state_code){
+      res.send('不正なアクセスです。');
+    }else{
+      request
       .post({
         url:'https://api.line.me/oauth2/v2.1/token',
         form:{
@@ -79,6 +83,7 @@ app
             res.send(body);
           })
       })
+    }
   })
   .use('/create',create)
   .post('/hook/',line.middleware(config),(req,res)=> lineBot(req,res))
