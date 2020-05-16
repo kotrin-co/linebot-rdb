@@ -8,6 +8,7 @@ const http = require('http');
 const fs = require('fs');
 const url = require('url');
 const qs = require('querystring');
+const request = require('request');
 
 const config = {
   channelAccessToken: process.env.ACCESS_TOKEN,
@@ -18,11 +19,67 @@ const client = new line.Client(config);
 
 const create = require('./routes/create');
 
+const onetime_state_code;
+
+const state_code = () => {
+  const l = 8;
+  const c = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  const cl = c.length;
+  let r = '';
+  for (let i=0;i<l;i++){
+    r+=c[Math.floor(Math.random()*cl)];
+  }
+  return r;
+}
+
 app
   .use(express.static(path.join(__dirname,'public')))
+  .disable('etag')
   .set('views',path.join(__dirname,'views'))
   .set('view engine','ejs')
   .get('/',(req,res)=>res.render('pages/index'))
+  .get('/login',(req,res)=>{
+    onetime_state_code = state_code();
+    const query = qs.stringify({
+      response_type:'code',
+      client_id:process.env.LINECORP_PLATFORM_CHANNEL_CHANNELID,
+      redirect_uri:'https://https://linebot-rdb.herokuapp.com/callback',
+      state:onetime_state_code,
+      scope:'profile'
+    })
+    res.redirect(301,'https://access.line.me/oauth2/v2.1/authorize?'+query)
+  })
+  .get('/callback',(req,res)=>{
+    request
+      .post({
+        url:'https://api.line.me/oauth2/v2.1/token',
+        form:{
+          grant_type:'authorization_code',
+          code:req.query.code,
+          redirect_uri:'https://https://linebot-rdb.herokuapp.com/callback',
+          client_id:process.env.LINECORP_PLATFORM_CHANNEL_CHANNELID,
+          client_secret:process.env.LINECORP_PLATFORM_CHANNEL_CHANNELSECRET
+        }
+      },(error,response,body)=>{
+        if(response.statusCode != 200){
+          res.send(error);
+          return;
+        }
+        request
+          .get({
+            url:'https://api.line.me/v2/profile',
+            headers:{
+              'Authorization':'Bearer'+JSON.parse(body).access_token
+            }
+          },(error,response,body)=>{
+            if(response.statusCode != 200){
+              res.send(error);
+              return;
+            }
+            res.send(body);
+          })
+      })
+  })
   .use('/create',create)
   .post('/hook/',line.middleware(config),(req,res)=> lineBot(req,res))
   .listen(PORT,()=>console.log(`Listening on ${PORT}`))
