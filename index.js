@@ -56,7 +56,7 @@ app
         form:{
           grant_type:'authorization_code',
           code:req.query.code,
-          redirect_uri:'https://https://linebot-rdb.herokuapp.com/callback',
+          redirect_uri:'https://linebot-rdb.herokuapp.com/callback',
           client_id:process.env.LINECORP_PLATFORM_CHANNEL_CHANNELID,
           client_secret:process.env.LINECORP_PLATFORM_CHANNEL_CHANNELSECRET
         }
